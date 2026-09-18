@@ -11,7 +11,7 @@ export default function EmployerHome() {
         </div>
         <div className="head-actions">
           <Link href="/platform/roles/new" className="button secondary">Create role</Link>
-          <Link href="/platform/roles/backend-engineer" className="button">Invite candidate</Link>
+          <Link href="/platform/roles/backend-engineer" className="button">Open active role</Link>
         </div>
       </div>
       <div className="notice">

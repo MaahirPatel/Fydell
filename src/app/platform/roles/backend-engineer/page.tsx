@@ -12,7 +12,6 @@ export default function RolePage() {
         </div>
         <div className="head-actions">
           <Link href="/candidate/backend-engineer" className="button secondary">Preview candidate view</Link>
-          <Link href="#candidates" className="button">Invite candidate</Link>
         </div>
       </div>
 
@@ -45,9 +44,6 @@ export default function RolePage() {
           </thead>
           <tbody>
             {role.candidates.map(candidate => {
-              const reportHref = candidate.id === "maya-chen"
-                ? "/platform/roles/backend-engineer/candidates/maya-chen"
-                : "/platform/roles/backend-engineer";
               return (
                 <tr key={candidate.id}>
                   <td>
@@ -60,7 +56,11 @@ export default function RolePage() {
                   <td className={candidate.recommendation === "Advance" ? "recommendation" : "muted"}>{candidate.recommendation ?? "—"}</td>
                   <td>{candidate.confidence ?? "—"}</td>
                   <td>{candidate.standout ?? "Awaiting work"}</td>
-                  <td><Link href={reportHref} className="evidence-link">{candidate.status === "ready" ? "Review →" : "View →"}</Link></td>
+                  <td>
+                    {candidate.id === "maya-chen"
+                      ? <Link href="/platform/roles/backend-engineer/candidates/maya-chen" className="evidence-link">Review →</Link>
+                      : <span className="muted">—</span>}
+                  </td>
                 </tr>
               );
             })}

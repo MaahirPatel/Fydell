@@ -32,7 +32,7 @@ export function SimulationWorkspace() {
         <Brand inverse />
         <span className="workspace-title">Production API incident</span>
         <span className="autosave">{saved ? "Saved on this device" : "Saving…"}</span>
-        <span className="timer">01:07:18</span>
+        <span className="timer">Demo session</span>
       </header>
       <div className="workspace-body">
         <aside className={`work-rail ${mobilePanel === "tasks" ? "mobile-show" : ""}`}>
@@ -85,7 +85,7 @@ export function SimulationWorkspace() {
             value={notes}
           />
           <footer>
-            <Link className="button" href="/receipt/maya-chen">Continue to recovery plan →</Link>
+            <Link className="button" href="/receipt/maya-chen">Finish demo · view sample receipt →</Link>
           </footer>
         </aside>
       </div>
