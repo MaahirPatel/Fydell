@@ -9,9 +9,13 @@ const storageKey = "fydell-demo-candidate-notes";
 export function SimulationWorkspace() {
   const [notes, setNotes] = useState("");
   const [saved, setSaved] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState<"tasks" | "work" | "notes">("work");
 
   useEffect(() => {
-    setNotes(window.localStorage.getItem(storageKey) ?? "");
+    const id = window.setTimeout(() => {
+      setNotes(window.localStorage.getItem(storageKey) ?? "");
+    }, 0);
+    return () => window.clearTimeout(id);
   }, []);
 
   useEffect(() => {
@@ -19,7 +23,6 @@ export function SimulationWorkspace() {
       window.localStorage.setItem(storageKey, notes);
       setSaved(true);
     }, 250);
-    setSaved(false);
     return () => window.clearTimeout(id);
   }, [notes]);
 
@@ -32,7 +35,7 @@ export function SimulationWorkspace() {
         <span className="timer">01:07:18</span>
       </header>
       <div className="workspace-body">
-        <aside className="work-rail">
+        <aside className={`work-rail ${mobilePanel === "tasks" ? "mobile-show" : ""}`}>
           <h2>Tasks</h2>
           {["Understand the incident", "Diagnose the failure", "Plan recovery", "Design prevention", "Executive update"].map((task, index) => (
             <div className={`task-item ${index === 1 ? "active" : ""}`} key={task}>
@@ -47,7 +50,7 @@ export function SimulationWorkspace() {
             <div className="artifact"><span>◇</span> architecture.png</div>
           </div>
         </aside>
-        <section className="work-center">
+        <section className={`work-center ${mobilePanel === "work" ? "mobile-show" : ""}`}>
           <span className="eyebrow">Task 2 of 5 · Diagnose</span>
           <h1>Identify the failure mechanism</h1>
           <p>
@@ -70,11 +73,14 @@ export function SimulationWorkspace() {
 10:41:42  db.insert       export=exp_442 rows=1 latency=21ms`}</pre>
           </div>
         </section>
-        <aside className="work-notes">
+        <aside className={`work-notes ${mobilePanel === "notes" ? "mobile-show" : ""}`}>
           <header>Working notes <span>{saved ? "Saved" : "Saving"}</span></header>
           <textarea
             aria-label="Working notes"
-            onChange={(event) => setNotes(event.target.value)}
+            onChange={(event) => {
+              setSaved(false);
+              setNotes(event.target.value);
+            }}
             placeholder="Capture your hypothesis, evidence, and open questions…"
             value={notes}
           />
@@ -83,6 +89,22 @@ export function SimulationWorkspace() {
           </footer>
         </aside>
       </div>
+      <nav className="mobile-work-nav" aria-label="Workspace panels">
+        {([
+          ["tasks", "Tasks"],
+          ["work", "Current task"],
+          ["notes", "Notes"],
+        ] as const).map(([panel, label]) => (
+          <button
+            className={mobilePanel === panel ? "active" : ""}
+            key={panel}
+            onClick={() => setMobilePanel(panel)}
+            type="button"
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
     </main>
   );
 }

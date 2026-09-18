@@ -322,6 +322,7 @@ h1, h2, h3, p { margin-top: 0; }
 .work-notes textarea { flex: 1; border: 0; resize: none; background: transparent; padding: 18px; outline: 0; font-size: 12px; line-height: 1.6; color: var(--ink); }
 .work-notes footer { padding: 14px; border-top: 1px solid var(--line); }
 .work-notes .button { width: 100%; }
+.mobile-work-nav { display: none; }
 
 .receipt-page { min-height: 100vh; background: #ecece7; padding: 38px 28px; }
 .receipt-toolbar { max-width: 900px; margin: 0 auto 14px; display: flex; justify-content: space-between; align-items: center; }
@@ -406,10 +407,34 @@ h1, h2, h3, p { margin-top: 0; }
   .candidate-content { padding: 40px 18px; }
   .candidate-intro h1 { font-size: 35px; }
   .workspace-body { grid-template-columns: 1fr; }
-  .work-rail { display: none; }
+  .work-rail, .work-center, .work-notes { display: none; }
+  .work-rail.mobile-show, .work-center.mobile-show, .work-notes.mobile-show { display: flex; }
+  .work-rail.mobile-show, .work-center.mobile-show { display: block; }
   .workspace-title { border: 0; padding: 0; }
   .autosave { display: none; }
-  .work-center { padding: 28px 20px 70px; }
+  .work-center { padding: 28px 20px 90px; }
+  .work-notes { border-left: 0; padding-bottom: 58px; }
+  .mobile-work-nav {
+    position: fixed;
+    z-index: 30;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 58px;
+    padding: 7px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    background: white;
+    border-top: 1px solid var(--line);
+  }
+  .mobile-work-nav button {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .mobile-work-nav button.active { background: var(--dark); color: white; }
   .receipt-page { padding: 0; }
   .receipt-toolbar { padding: 12px; margin: 0; }
   .receipt-head { padding: 25px; }
