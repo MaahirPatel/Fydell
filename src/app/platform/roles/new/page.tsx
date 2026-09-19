@@ -8,17 +8,17 @@ export default function CreateRolePage() {
           <div className="breadcrumbs">
             <Link href="/platform">Overview</Link> / New role
           </div>
-          <h1>Create a role</h1>
+          <h1>Solutions Engineer is the active role</h1>
           <p>
-            This demo ships one calibrated Solutions Engineer simulation. For
-            your own role and candidates, start a founder-led pilot.
+            This build keeps one calibrated role. Invite candidates on that role
+            to run the durable invite → report loop.
           </p>
         </div>
       </div>
 
       <div className="notice demo-banner" role="status">
-        <b>Demo data.</b> Role creation for custom jobs is part of the pilot—not
-        a dead form in this build.
+        <b>No extra roles this week.</b> Use the seeded Solutions Engineer role
+        and create invites there.
       </div>
 
       <section className="panel">
@@ -27,28 +27,17 @@ export default function CreateRolePage() {
         </div>
         <div className="side-panel-body" style={{ display: "grid", gap: 14 }}>
           <p>
-            Open the seeded <b>Solutions Engineer</b> role, review Candidate 1–3
-            briefs, and compare recommendations.
+            Open the Solutions Engineer pipeline, invite a candidate, complete
+            the simulation, review the evidence report, and record a decision.
           </p>
           <div className="hero-actions">
             <Link href="/platform/roles/solutions-engineer" className="button">
-              Open Solutions Engineer demo
+              Open role + invite
             </Link>
             <Link href="/pilot" className="button secondary">
               Start a pilot with your candidates
             </Link>
           </div>
-          <p className="muted" style={{ marginBottom: 0 }}>
-            Email{" "}
-            <a className="evidence-link" href="mailto:pilots@fydell.com">
-              pilots@fydell.com
-            </a>{" "}
-            or{" "}
-            <a className="evidence-link" href="mailto:maahir@fydell.com">
-              maahir@fydell.com
-            </a>
-            .
-          </p>
         </div>
       </section>
     </main>

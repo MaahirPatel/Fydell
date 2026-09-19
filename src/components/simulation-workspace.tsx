@@ -1,12 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Brand } from "@/components/brand";
-
-const storageKey = "fydell-se-workspace-v1";
-
-type StageId = "discovery" | "requirements" | "recommendation" | "handoff";
+import type { Attempt, StageId, WorkspaceState } from "@/lib/store/types";
 
 const stages: { id: StageId; label: string }[] = [
   { id: "discovery", label: "Discovery" },
@@ -14,14 +11,6 @@ const stages: { id: StageId; label: string }[] = [
   { id: "recommendation", label: "Recommendation" },
   { id: "handoff", label: "Customer handoff" },
 ];
-
-const initialPlan = `## Rollout
-
-- Launch all 1,200 seats in a single production cutover at week six.
-- The authentication security review can run in parallel with production access.
-- Phase one can support early users while remaining business units prepare.
-- Adoption risk should remain low because the sponsor reports strong weekly usage.
-`;
 
 const revisedHint = `## Rollout
 
@@ -31,66 +20,88 @@ const revisedHint = `## Rollout
 - Cohort size stays provisional until weekly active-user data is verified.
 `;
 
-type Persisted = {
-  stage: StageId;
-  plan: string;
-  notes: string;
-  versions: { at: string; body: string }[];
-  constraintSeen: boolean;
-  defense: string[];
-  submitted: boolean;
-};
-
-const defaultState: Persisted = {
-  stage: "discovery",
-  plan: initialPlan,
-  notes: "",
-  versions: [{ at: "Start", body: initialPlan }],
-  constraintSeen: false,
-  defense: ["", "", ""],
-  submitted: false,
-};
-
 const defenseQuestions = [
   "Your adoption assumption comes from the sponsor. How would you test it before sizing the first production cohort?",
   "Which fact in this brief would most likely change your recommendation again?",
   "What did you preserve after the security constraint, and what moved?",
 ];
 
-export function SimulationWorkspace() {
-  const [state, setState] = useState<Persisted>(defaultState);
-  const [saved, setSaved] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
+const emptyWorkspace: WorkspaceState = {
+  stage: "discovery",
+  plan: `## Rollout
+
+- Launch all 1,200 seats in a single production cutover at week six.
+- The authentication security review can run in parallel with production access.
+- Phase one can support early users while remaining business units prepare.
+- Adoption risk should remain low because the sponsor reports strong weekly usage.
+`,
+  notes: "",
+  versions: [],
+  constraintSeen: false,
+  defense: ["", "", ""],
+  updatedAt: new Date().toISOString(),
+};
+
+emptyWorkspace.versions = [{ at: "Start", body: emptyWorkspace.plan }];
+
+export function SimulationWorkspace({
+  token,
+  initialAttempt,
+}: {
+  token: string;
+  initialAttempt: Attempt;
+}) {
+  const [attempt, setAttempt] = useState(initialAttempt);
+  const [state, setState] = useState<WorkspaceState>(
+    initialAttempt.workspace ?? emptyWorkspace,
+  );
+  const [saved, setSaved] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<"tasks" | "work" | "notes">(
     "work",
   );
   const [activeFile, setActiveFile] = useState<
     "brief" | "thread" | "plan" | "assumptions"
   >("brief");
+  const pendingEvent = useRef<{ type: string; detail: string } | null>(null);
+  const skipNextSave = useRef(true);
 
   useEffect(() => {
-    const id = window.setTimeout(() => {
-      try {
-        const raw = window.localStorage.getItem(storageKey);
-        if (raw) setState({ ...defaultState, ...JSON.parse(raw) });
-      } catch {
-        /* ignore corrupt demo state */
+    if (
+      attempt.status === "submitted" ||
+      attempt.status === "in_review" ||
+      attempt.status === "report_ready" ||
+      attempt.status === "decision_recorded"
+    ) {
+      return;
+    }
+    if (skipNextSave.current) {
+      skipNextSave.current = false;
+      return;
+    }
+    const id = window.setTimeout(async () => {
+      const event = pendingEvent.current;
+      pendingEvent.current = null;
+      const response = await fetch(`/api/attempts/by-token/${token}/workspace`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspace: state, event }),
+      });
+      if (response.ok) {
+        const data = (await response.json()) as { attempt: Attempt };
+        setAttempt(data.attempt);
+        setSaved(true);
       }
-      setHydrated(true);
-    }, 0);
+    }, 400);
     return () => window.clearTimeout(id);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    const id = window.setTimeout(() => {
-      window.localStorage.setItem(storageKey, JSON.stringify(state));
-      setSaved(true);
-    }, 280);
-    return () => window.clearTimeout(id);
-  }, [state, hydrated]);
+  }, [state, token, attempt.status]);
 
   const stageIndex = stages.findIndex((stage) => stage.id === state.stage);
+  const submitted =
+    attempt.status === "submitted" ||
+    attempt.status === "in_review" ||
+    attempt.status === "report_ready" ||
+    attempt.status === "decision_recorded";
 
   const fileBody = useMemo(() => {
     if (activeFile === "brief") {
@@ -139,62 +150,80 @@ Authentication review is on the calendar. Details to follow.`
     return state.plan;
   }, [activeFile, state.constraintSeen, state.plan]);
 
-  function update(partial: Partial<Persisted>) {
+  function update(
+    partial: Partial<WorkspaceState>,
+    event?: { type: string; detail: string },
+  ) {
     setSaved(false);
-    setState((prev) => ({ ...prev, ...partial }));
+    if (event) pendingEvent.current = event;
+    setState((prev) => ({
+      ...prev,
+      ...partial,
+      updatedAt: new Date().toISOString(),
+    }));
   }
 
-  function savePlanVersion(body: string) {
+  function savePlanVersion(body: string, detail: string) {
     const stamp = new Date().toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
     });
-    update({
-      plan: body,
-      versions: [...state.versions, { at: stamp, body }],
+    update(
+      {
+        plan: body,
+        versions: [...state.versions, { at: stamp, body }],
+      },
+      { type: "plan_revised", detail },
+    );
+  }
+
+  async function submit() {
+    setSubmitting(true);
+    await fetch(`/api/attempts/by-token/${token}/workspace`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ workspace: state }),
     });
+    const response = await fetch(`/api/attempts/by-token/${token}/submit`, {
+      method: "POST",
+    });
+    setSubmitting(false);
+    if (response.ok) {
+      const data = (await response.json()) as { attempt: Attempt };
+      setAttempt(data.attempt);
+    }
   }
 
-  function deliverConstraint() {
-    update({ constraintSeen: true, stage: "recommendation" });
-    setActiveFile("thread");
-  }
-
-  function applySandboxRevision() {
-    savePlanVersion(revisedHint);
-    setActiveFile("plan");
-  }
-
-  if (state.submitted) {
+  if (submitted) {
     return (
       <main className="candidate-shell">
         <header className="candidate-top">
           <Brand />
-          <span>Demo data · Simulation submitted</span>
+          <span>Submitted · Durable record updated</span>
         </header>
         <div className="candidate-content" style={{ maxWidth: 720 }}>
           <span className="eyebrow">Submission received</span>
           <h1 style={{ fontSize: 36, letterSpacing: "-0.04em" }}>
-            Your Acme recommendation is in the employer shortlist path.
+            Your work is on the employer shortlist as {attempt.label}.
           </h1>
           <p className="lead">
-            In this demo, open the seeded Candidate 1 evidence report to see how
-            Fydell turns work like this into a 60-second decision brief.
+            Status is now <b>{attempt.status.replace(/_/g, " ")}</b>. A draft
+            evidence report was generated from recorded actions for human
+            review.
           </p>
           <div className="hero-actions">
             <Link
               className="button"
-              href="/platform/roles/solutions-engineer/candidates/candidate-1"
+              href={`/platform/roles/solutions-engineer/candidates/${attempt.id}`}
             >
-              Open sample evidence report →
+              Open employer evidence report →
             </Link>
-            <button
+            <Link
               className="button secondary"
-              type="button"
-              onClick={() => update({ submitted: false })}
+              href="/platform/roles/solutions-engineer"
             >
-              Return to workspace
-            </button>
+              Back to role pipeline
+            </Link>
           </div>
         </div>
       </main>
@@ -205,9 +234,11 @@ Authentication review is on the calendar. Details to follow.`
     <main className="workspace-page">
       <header className="workspace-top">
         <Brand inverse />
-        <span className="workspace-title">Acme 1,200-seat rollout · Demo data</span>
+        <span className="workspace-title">
+          {attempt.label} · Acme rollout · Durable session
+        </span>
         <span className="autosave">
-          {saved ? "Saved on this device" : "Saving…"}
+          {saved ? "Saved to server" : "Saving…"}
         </span>
         <span className="timer">Demo session</span>
       </header>
@@ -220,7 +251,15 @@ Authentication review is on the calendar. Details to follow.`
             <button
               className={`task-item ${state.stage === stage.id ? "active" : ""}`}
               key={stage.id}
-              onClick={() => update({ stage: stage.id })}
+              onClick={() =>
+                update(
+                  { stage: stage.id },
+                  {
+                    type: "stage_changed",
+                    detail: `Moved to ${stage.label}.`,
+                  },
+                )
+              }
               type="button"
             >
               <span className="task-num">{index + 1}</span>
@@ -254,13 +293,23 @@ Authentication review is on the calendar. Details to follow.`
             <button
               className="button small"
               style={{ width: "100%", marginTop: 16 }}
-              onClick={deliverConstraint}
+              onClick={() => {
+                update(
+                  { constraintSeen: true, stage: "recommendation" },
+                  {
+                    type: "constraint_delivered",
+                    detail:
+                      "Security review blocks production access for six weeks.",
+                  },
+                );
+                setActiveFile("thread");
+              }}
               type="button"
             >
               Deliver security constraint
             </button>
           ) : (
-            <p className="constraint-flag">Constraint delivered · 16:08</p>
+            <p className="constraint-flag">Constraint delivered · recorded</p>
           )}
         </aside>
 
@@ -285,9 +334,9 @@ Authentication review is on the calendar. Details to follow.`
             {state.stage === "recommendation" &&
               (state.constraintSeen
                 ? "Security blocked production access for six weeks. Revise rollout_plan.md so the sequencing respects that constraint."
-                : "Draft an initial rollout plan. A consequential constraint may arrive—deliver it when you are ready.")}
+                : "Draft an initial rollout plan. Deliver the security constraint when ready.")}
             {state.stage === "handoff" &&
-              "Answer the defense questions from your own plan. Then submit to see the employer evidence path."}
+              "Answer the defense questions from your own plan, then submit for employer review."}
           </p>
 
           {state.constraintSeen && state.stage === "recommendation" ? (
@@ -299,7 +348,12 @@ Authentication review is on the calendar. Details to follow.`
                 <button
                   className="button small"
                   type="button"
-                  onClick={applySandboxRevision}
+                  onClick={() =>
+                    savePlanVersion(
+                      revisedHint,
+                      "Applied sandbox-first revision after constraint.",
+                    )
+                  }
                 >
                   Apply sandbox-first revision to plan
                 </button>
@@ -315,11 +369,20 @@ Authentication review is on the calendar. Details to follow.`
                     Q{index + 1}. {question}
                   </span>
                   <textarea
-                    value={state.defense[index]}
+                    value={state.defense[index] ?? ""}
                     onChange={(event) => {
                       const defense = [...state.defense];
                       defense[index] = event.target.value;
                       update({ defense });
+                    }}
+                    onBlur={() => {
+                      if (state.defense[index]?.trim()) {
+                        pendingEvent.current = {
+                          type: "defense_answered",
+                          detail: `Answered defense question ${index + 1}.`,
+                        };
+                        setState((prev) => ({ ...prev }));
+                      }
                     }}
                     placeholder="Answer from your artifacts…"
                   />
@@ -341,9 +404,15 @@ Authentication review is on the calendar. Details to follow.`
                 value={state.plan}
                 onChange={(event) => {
                   setSaved(false);
-                  setState((prev) => ({ ...prev, plan: event.target.value }));
+                  setState((prev) => ({
+                    ...prev,
+                    plan: event.target.value,
+                    updatedAt: new Date().toISOString(),
+                  }));
                 }}
-                onBlur={() => savePlanVersion(state.plan)}
+                onBlur={() =>
+                  savePlanVersion(state.plan, "Saved rollout plan revision.")
+                }
               />
             </div>
           ) : (
@@ -402,9 +471,10 @@ Authentication review is on the calendar. Details to follow.`
             <button
               className="button"
               type="button"
-              onClick={() => update({ submitted: true })}
+              disabled={submitting}
+              onClick={submit}
             >
-              Submit → view sample report
+              {submitting ? "Submitting…" : "Submit for employer review →"}
             </button>
           </footer>
         </aside>

@@ -1,9 +1,28 @@
 import Link from "next/link";
-import { role, statusLabel } from "@/lib/demo-data";
+import { role } from "@/lib/demo-data";
+import { listAttempts } from "@/lib/store";
+import { statusLabel } from "@/lib/store/types";
 
-export default function EmployerHome() {
-  const ready = role.candidates.filter((c) => c.status === "ready");
-  const inProgress = role.candidates.filter((c) => c.status === "in_progress");
+export const dynamic = "force-dynamic";
+
+function canReview(status: string) {
+  return [
+    "submitted",
+    "in_review",
+    "report_ready",
+    "decision_recorded",
+  ].includes(status);
+}
+
+export default async function EmployerHome() {
+  const attempts = await listAttempts();
+  const ready = attempts.filter((attempt) => canReview(attempt.status));
+  const inProgress = attempts.filter(
+    (attempt) =>
+      attempt.status === "in_progress" ||
+      attempt.status === "opened" ||
+      attempt.status === "invited",
+  );
 
   return (
     <main className="page">
@@ -11,8 +30,8 @@ export default function EmployerHome() {
         <div>
           <h1>Solutions Engineer shortlist</h1>
           <p>
-            {ready.length} briefs ready · {inProgress.length} in progress · Demo
-            data
+            {ready.length} briefs · {inProgress.length} open invites/sessions ·
+            Durable store
           </p>
         </div>
         <div className="head-actions">
@@ -26,17 +45,17 @@ export default function EmployerHome() {
       </div>
 
       <div className="notice demo-banner" role="status">
-        <b>Demo data.</b> These are anonymized sample candidates for the Acme
-        rollout simulation—not live production analysis. Every control on this
-        path works.
+        <b>Demo data + live invites.</b> Seeded briefs are ready. Create an
+        invite on the role page to run the full invite → workspace → report →
+        decision loop with durable records.
       </div>
 
       <section className="metric-row" aria-label="Workspace overview">
         {[
           ["Active role", "1", role.title],
-          ["Candidates", String(role.candidates.length), "Anonymized demo set"],
-          ["Ready for review", String(ready.length), "Strong · Borderline · Reject"],
-          ["In progress", String(inProgress.length), "Candidate 4"],
+          ["Records", String(attempts.length), "Seeded + live"],
+          ["Ready for review", String(ready.length), "Reports available"],
+          ["Open pipeline", String(inProgress.length), "Invited / in progress"],
         ].map(([label, value, detail]) => (
           <div className="metric" key={label}>
             <small>{label}</small>
@@ -54,17 +73,20 @@ export default function EmployerHome() {
               <span className="status">{ready.length} ready</span>
             </div>
             <div className="action-list">
-              {ready.map((candidate) => (
-                <div className="action-item" key={candidate.id}>
-                  <span className="action-icon">{candidate.initials}</span>
+              {ready.slice(0, 5).map((attempt) => (
+                <div className="action-item" key={attempt.id}>
+                  <span className="action-icon">{attempt.initials}</span>
                   <div>
-                    <b>Review {candidate.label}</b>
+                    <b>Review {attempt.label}</b>
                     <small>
-                      {role.title} · {candidate.recommendation}
+                      {role.title} ·{" "}
+                      {attempt.review?.recommendation ??
+                        attempt.report?.recommendation ??
+                        statusLabel[attempt.status]}
                     </small>
                   </div>
                   <Link
-                    href={`/platform/roles/solutions-engineer/candidates/${candidate.id}`}
+                    href={`/platform/roles/solutions-engineer/candidates/${attempt.id}`}
                     className="button small"
                   >
                     Review
@@ -90,16 +112,16 @@ export default function EmployerHome() {
                 </span>
               </div>
               <div className="role-cell">
-                <b>{role.candidates.length}</b>
-                <small>Candidates</small>
+                <b>{attempts.length}</b>
+                <small>Records</small>
               </div>
               <div className="role-cell">
                 <b>{ready.length}</b>
-                <small>Briefs ready</small>
+                <small>Briefs</small>
               </div>
               <div className="role-cell">
                 <b>{inProgress.length}</b>
-                <small>In progress</small>
+                <small>Open</small>
               </div>
               <span>→</span>
             </Link>
@@ -112,13 +134,13 @@ export default function EmployerHome() {
               <h2>Pipeline status</h2>
             </div>
             <div className="activity-list">
-              {role.candidates.map((candidate) => (
-                <div className="activity-row" key={candidate.id}>
+              {attempts.slice(0, 8).map((attempt) => (
+                <div className="activity-row" key={attempt.id}>
                   <i />
                   <span>
-                    {candidate.label} · {statusLabel[candidate.status]}
+                    {attempt.label} · {statusLabel[attempt.status]}
                   </span>
-                  <time>{candidate.completedAt ?? "Active"}</time>
+                  <time>{attempt.seeded ? "Seed" : "Live"}</time>
                 </div>
               ))}
             </div>

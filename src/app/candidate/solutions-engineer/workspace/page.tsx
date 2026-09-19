@@ -1,5 +1,5 @@
-import { SimulationWorkspace } from "@/components/simulation-workspace";
+import { redirect } from "next/navigation";
 
-export default function WorkspacePage() {
-  return <SimulationWorkspace />;
+export default function WorkspaceRedirect() {
+  redirect("/c/demo-c4/workspace");
 }

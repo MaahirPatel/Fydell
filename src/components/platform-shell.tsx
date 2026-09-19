@@ -52,8 +52,8 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
             <span className="demo-label">Demo data · Interactive product demo</span>
           </div>
           <div className="top-actions">
-            <Link href="/candidate/solutions-engineer" className="text-link">
-              Candidate view
+            <Link href="/c/demo-c4" className="text-link">
+              Candidate link
             </Link>
             <Link href="/pilot" className="text-link">
               Start a pilot

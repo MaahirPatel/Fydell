@@ -1,8 +1,23 @@
 import Link from "next/link";
-import { comparisonRows, role, statusLabel } from "@/lib/demo-data";
+import { InviteForm } from "@/components/invite-form";
+import { comparisonRows, role } from "@/lib/demo-data";
+import { listAttempts } from "@/lib/store";
+import { statusLabel } from "@/lib/store/types";
 
-export default function RolePage() {
-  const reviewed = role.candidates.filter((c) => c.recommendation);
+export const dynamic = "force-dynamic";
+
+function canReview(status: string) {
+  return [
+    "submitted",
+    "in_review",
+    "report_ready",
+    "decision_recorded",
+  ].includes(status);
+}
+
+export default async function RolePage() {
+  const attempts = await listAttempts();
+  const reviewed = attempts.filter((attempt) => canReview(attempt.status));
 
   return (
     <main className="page">
@@ -18,7 +33,7 @@ export default function RolePage() {
         </div>
         <div className="head-actions">
           <Link href="/candidate/solutions-engineer" className="button secondary">
-            Preview candidate view
+            Preview seeded candidate view
           </Link>
           <Link href="/pilot" className="button">
             Start a pilot
@@ -27,8 +42,8 @@ export default function RolePage() {
       </div>
 
       <div className="notice demo-banner" role="status">
-        <b>Demo data.</b> Four anonymized candidates on the Acme 1,200-seat
-        rollout simulation.
+        <b>Demo data + live invites.</b> Seeded candidates ship ready. New
+        invites write durable JSON records (status, workspace, report, decision).
       </div>
 
       <section className="role-summary">
@@ -55,13 +70,31 @@ export default function RolePage() {
         </div>
       </section>
 
+      <div className="grid-main" style={{ marginBottom: 18 }}>
+        <InviteForm />
+        <aside className="panel">
+          <div className="panel-head">
+            <h2>Status legend</h2>
+          </div>
+          <div className="side-panel-body">
+            <p>
+              invited → opened → in progress → submitted → in review → brief
+              ready → decision recorded
+            </p>
+            <p className="muted" style={{ marginBottom: 0 }}>
+              Manual review is required. Nothing auto-advances a hire.
+            </p>
+          </div>
+        </aside>
+      </div>
+
       <section id="candidates">
         <div className="panel-head panel">
           <div>
             <h2>Candidate pipeline</h2>
           </div>
           <span className="muted">
-            {role.candidates.length} candidates · {reviewed.length} briefs ready
+            {attempts.length} records · {reviewed.length} with reports
           </span>
         </div>
         <table className="candidate-table">
@@ -76,66 +109,87 @@ export default function RolePage() {
             </tr>
           </thead>
           <tbody>
-            {role.candidates.map((candidate) => (
-              <tr key={candidate.id}>
-                <td>
-                  <div className="candidate-name">
-                    <span className="avatar">{candidate.initials}</span>
-                    <span>
-                      <b>{candidate.label}</b>
-                      <small>
-                        {candidate.completedAt ?? "Invitation active"}
-                      </small>
-                    </span>
-                  </div>
-                </td>
-                <td>
-                  <span
-                    className={`status ${
-                      candidate.status === "ready"
-                        ? ""
-                        : candidate.status === "in_progress"
-                          ? "amber"
-                          : "neutral"
-                    }`}
-                  >
-                    {statusLabel[candidate.status]}
-                  </span>
-                </td>
-                <td
-                  className={
-                    candidate.recommendation === "Strong interview"
-                      ? "recommendation"
-                      : candidate.recommendation === "Do not advance"
-                        ? "recommendation-reject"
-                        : "muted"
-                  }
-                >
-                  {candidate.recommendation ?? "—"}
-                </td>
-                <td>{candidate.confidence ?? "—"}</td>
-                <td>{candidate.standout ?? "Awaiting work"}</td>
-                <td>
-                  {candidate.recommendation ? (
-                    <Link
-                      href={`/platform/roles/solutions-engineer/candidates/${candidate.id}`}
-                      className="evidence-link"
+            {attempts.map((attempt) => {
+              const recommendation =
+                attempt.review?.recommendation ??
+                attempt.report?.recommendation;
+              return (
+                <tr key={attempt.id}>
+                  <td>
+                    <div className="candidate-name">
+                      <span className="avatar">{attempt.initials}</span>
+                      <span>
+                        <b>{attempt.label}</b>
+                        <small>
+                          {attempt.seeded ? "Seeded" : "Live invite"}
+                          {attempt.email ? ` · ${attempt.email}` : ""}
+                        </small>
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <span
+                      className={`status ${
+                        canReview(attempt.status)
+                          ? ""
+                          : attempt.status === "in_progress" ||
+                              attempt.status === "opened"
+                            ? "amber"
+                            : "neutral"
+                      }`}
                     >
-                      Review →
-                    </Link>
-                  ) : (
-                    <span className="muted">In progress</span>
-                  )}
-                </td>
-              </tr>
-            ))}
+                      {statusLabel[attempt.status]}
+                    </span>
+                  </td>
+                  <td
+                    className={
+                      recommendation === "Strong interview"
+                        ? "recommendation"
+                        : recommendation === "Do not advance"
+                          ? "recommendation-reject"
+                          : "muted"
+                    }
+                  >
+                    {recommendation ?? "—"}
+                  </td>
+                  <td>
+                    {attempt.review?.confidence ??
+                      attempt.report?.confidence ??
+                      "—"}
+                  </td>
+                  <td>
+                    {attempt.report?.standout ??
+                      (attempt.status === "in_progress"
+                        ? "In workspace"
+                        : "Awaiting work")}
+                  </td>
+                  <td>
+                    {canReview(attempt.status) ? (
+                      <Link
+                        href={`/platform/roles/solutions-engineer/candidates/${attempt.id}`}
+                        className="evidence-link"
+                      >
+                        Review →
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/c/${attempt.token}`}
+                        className="evidence-link"
+                      >
+                        Candidate link →
+                      </Link>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </section>
 
       <section className="panel" style={{ marginTop: 18 }} id="comparison">
         <div className="panel-head">
-          <h2>Comparison · reviewed candidates</h2>
+          <h2>Comparison · seeded reviewed candidates</h2>
           <span className="muted">Demo data</span>
         </div>
         <div className="comparison-wrap">
@@ -192,8 +246,7 @@ export default function RolePage() {
               <b>Ready to use your own candidates?</b>
             </p>
             <p>
-              Same Solutions Engineer simulation shape. Real invitations and
-              briefs. Contact{" "}
+              Same Solutions Engineer simulation. Contact{" "}
               <a className="evidence-link" href="mailto:pilots@fydell.com">
                 pilots@fydell.com
               </a>

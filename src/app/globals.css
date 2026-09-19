@@ -213,6 +213,74 @@ h1, h2, h3, p { margin-top: 0; }
   color: var(--ink-soft);
 }
 .version-row:hover { color: var(--ink); }
+.expand-stack { display: grid; gap: 8px; }
+.expand-card {
+  background: white;
+  border: 1px solid var(--line);
+}
+.expand-card summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 14px 16px;
+  font-size: 13px;
+  font-weight: 580;
+}
+.expand-card summary::-webkit-details-marker { display: none; }
+.expand-card summary::after {
+  content: "+";
+  float: right;
+  color: var(--muted);
+  font-weight: 450;
+}
+.expand-card[open] summary::after { content: "–"; }
+.expand-body {
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.brief-concern {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.review-form label,
+.invite-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 560;
+  margin-bottom: 12px;
+}
+.review-form textarea,
+.invite-form input,
+.review-form select,
+.review-form input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fdfdfb;
+  padding: 10px 11px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 450;
+}
+.review-form textarea { min-height: 78px; resize: vertical; }
+.invite-result {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+}
+.invite-link {
+  display: block;
+  margin: 8px 0 12px;
+  padding: 10px;
+  background: #f4f4f0;
+  border: 1px solid var(--line);
+  font-size: 11px;
+  word-break: break-all;
+}
 .product-window { border-radius: 8px; overflow: hidden; background: var(--dark); color: #e8e9e5; min-height: 530px; }
 .window-bar { height: 47px; display: flex; align-items: center; padding: 0 17px; background: #1c1e1a; border-bottom: 1px solid #2c2f29; gap: 8px; }
 .traffic { display: flex; gap: 6px; }
