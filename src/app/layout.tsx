@@ -7,11 +7,11 @@ const mono = Geist_Mono({ variable: "--font-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: {
-    default: "Fydell — Evaluate candidates on the work",
+    default: "Fydell — Know who is worth interviewing before the interview",
     template: "%s · Fydell",
   },
   description:
-    "Fydell turns realistic work simulations into evidence-backed hiring decisions.",
+    "Fydell puts Solutions Engineer candidates through realistic customer work and returns a shortlist with evidence, uncertainty, and interview questions.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

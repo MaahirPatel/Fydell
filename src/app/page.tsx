@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { Brand } from "@/components/brand";
+import { role, sampleOutcome } from "@/lib/demo-data";
 
-const candidates = [
-  ["Maya Chen", "87", "Advance"],
-  ["Jon Bell", "71", "Hold"],
-  ["Priya Shah", "—", "In progress"],
+const sequence = [
+  "Brief",
+  "Constraint changes",
+  "Revise",
+  "Employer evidence brief",
 ] as const;
 
 export default function Home() {
@@ -13,79 +15,88 @@ export default function Home() {
       <header className="site-header">
         <Brand />
         <nav className="site-nav" aria-label="Main navigation">
-          <a href="#product">Product</a>
-          <a href="#evidence">How it works</a>
-          <a href="#trust">Trust</a>
+          <a href="#how">How it works</a>
+          <a href="#outcome">Sample outcome</a>
+          <Link href="/pilot">Pilot</Link>
         </nav>
         <div className="site-actions">
-          <Link href="/candidate/backend-engineer" className="text-link">Candidate view</Link>
-          <Link href="/platform" className="button small">Explore the demo</Link>
+          <Link href="/pilot" className="text-link">
+            Run a pilot
+          </Link>
+          <Link href="/platform" className="button small">
+            Explore live demo
+          </Link>
         </div>
       </header>
 
-      <section className="hero" id="product">
+      <section className="hero hero-compact" id="product">
         <div className="hero-copy">
-          <span className="eyebrow">Proof-of-work hiring</span>
-          <h1>Evaluate candidates on the <span>work.</span></h1>
+          <p className="brand-hero">fydell</p>
+          <h1>Know who is worth interviewing before the interview.</h1>
           <p>
-            Fydell turns realistic work simulations into clear hiring
-            recommendations—with every claim connected to evidence you can inspect.
+            Fydell puts Solutions Engineer candidates through realistic customer
+            work and returns a shortlist with evidence, uncertainty, and the
+            questions your interview should investigate.
           </p>
           <div className="hero-actions">
-            <Link href="/platform" className="button large">Explore the employer demo <span>→</span></Link>
-            <Link href="/candidate/backend-engineer" className="button secondary large">View the candidate experience</Link>
+            <Link href="/platform" className="button large">
+              Explore live demo <span>→</span>
+            </Link>
+            <Link href="/pilot" className="button secondary large">
+              Run a pilot
+            </Link>
           </div>
+          <ol className="hero-sequence" aria-label="Demo sequence">
+            {sequence.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
         </div>
 
-        <div className="hero-proof" aria-label="Fydell role command center preview">
+        <div className="hero-proof" aria-label="Solutions Engineer shortlist preview">
           <div className="product-window">
             <div className="window-bar">
-              <span className="traffic"><i /><i /><i /></span>
-              <span className="window-title">Northstar · Backend Software Engineer</span>
+              <span className="traffic">
+                <i />
+                <i />
+                <i />
+              </span>
+              <span className="window-title">
+                Northstar · Solutions Engineer · Demo data
+              </span>
             </div>
-            <div className="window-body">
+            <div className="window-body window-body-compact">
               <aside className="preview-rail">
                 <strong>Northstar</strong>
                 <span>Overview</span>
                 <span className="active">Roles</span>
-                <span>Candidates</span>
-                <span>Settings</span>
+                <span>Shortlist</span>
               </aside>
               <div className="preview-main">
                 <div className="preview-heading">
                   <div>
-                    <h3>Backend Software Engineer</h3>
-                    <p>4 candidates · 2 ready for review</p>
+                    <h3>{role.title}</h3>
+                    <p>4 candidates · 3 briefs ready · Demo data</p>
                   </div>
                   <span className="status dark">Active</span>
                 </div>
-                <div className="preview-grid">
+                <div className="preview-grid preview-grid-single">
                   <div className="preview-card">
-                    <h4>Candidate pipeline</h4>
-                    {candidates.map(([name, score, recommendation]) => (
-                      <div className="preview-candidate" key={name}>
-                        <span className="avatar avatar-small">{name.split(" ").map(part => part[0]).join("")}</span>
-                        <b>{name}</b>
-                        <span>{score}</span>
-                        <em>{recommendation}</em>
+                    <h4>Shortlist</h4>
+                    {role.candidates.map((candidate) => (
+                      <div className="preview-candidate" key={candidate.id}>
+                        <span className="avatar avatar-small">
+                          {candidate.initials}
+                        </span>
+                        <b>{candidate.label}</b>
+                        <em>
+                          {candidate.recommendation ??
+                            (candidate.status === "in_progress"
+                              ? "In progress"
+                              : "—")}
+                        </em>
                       </div>
                     ))}
-                  </div>
-                  <div className="preview-card">
-                    <h4>Maya&apos;s strongest signals</h4>
-                    <div className="signal-bars">
-                      {[
-                        ["Debugging", "94%"],
-                        ["Systems reasoning", "89%"],
-                        ["API design", "86%"],
-                        ["Communication", "72%"],
-                      ].map(([label, width]) => (
-                        <div className="signal-bar" key={label}>
-                          {label}
-                          <div><i style={{ width }} /></div>
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -94,34 +105,19 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="thesis" id="evidence">
-        <div className="thesis-inner">
-          <span className="eyebrow">A complete line of sight</span>
-          <h2>From an open role to a defensible hiring decision.</h2>
-          <div className="flow-line">
-            {["Define the role", "Invite a candidate", "Observe the work", "Inspect the evidence", "Make the decision"].map((step, index) => (
-              <div className="flow-step" key={step}>
-                <small>0{index + 1}</small>
-                <b>{step}</b>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="landing-section" id="trust">
+      <section className="landing-section compact-section" id="how">
         <div className="section-head">
-          <h2>A decision brief, not another test score.</h2>
+          <h2>How it works</h2>
           <p>
-            A hiring manager should understand what a candidate did, why it
-            matters, and what to ask next in about 60 seconds.
+            Define the role. Candidates complete a work simulation. You receive
+            an evidence-backed shortlist.
           </p>
         </div>
-        <div className="evidence-columns">
+        <div className="evidence-columns how-columns">
           {[
-            ["01", "Specific claims", "Recommendations describe observable behavior—not generic personality traits."],
-            ["02", "Auditable evidence", "Every important claim opens the exact work, event, or decision that supports it."],
-            ["03", "Candidate-specific follow-ups", "Interview questions test the assumptions and gaps in this candidate’s own work."],
+            ["01", "Define role", "Calibrate the situation and the signals your team will judge."],
+            ["02", "Candidates complete work", "Realistic customer pressure, constraints, and revisions—not trivia."],
+            ["03", "Evidence-backed shortlist", "Who to interview, what remains uncertain, and what to ask next."],
           ].map(([number, title, body]) => (
             <article className="evidence-feature" key={number}>
               <span className="number">{number}</span>
@@ -132,10 +128,34 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="landing-cta">
-        <h2>See the evidence.<br />Make the call.</h2>
-        <Link href="/platform" className="button large">Open the 90-second demo <span>→</span></Link>
+      <section className="landing-section compact-section" id="outcome">
+        <div className="sample-outcome">
+          <span className="eyebrow">Sample outcome · Demo data</span>
+          <h2>{sampleOutcome}</h2>
+          <Link href="/platform/roles/solutions-engineer/candidates/candidate-1" className="button">
+            Open Candidate 1 brief →
+          </Link>
+        </div>
       </section>
+
+      <section className="landing-cta">
+        <div>
+          <h2>See the shortlist. Run a pilot with your own candidates.</h2>
+          <p className="landing-cta-note">
+            Founder-led pilots. Contact{" "}
+            <a href="mailto:pilots@fydell.com">pilots@fydell.com</a>.
+          </p>
+        </div>
+        <div className="hero-actions">
+          <Link href="/platform" className="button large">
+            Explore live demo <span>→</span>
+          </Link>
+          <Link href="/pilot" className="button secondary large">
+            Run a pilot
+          </Link>
+        </div>
+      </section>
+
       <footer className="site-footer">
         <Brand />
         <span>© 2026 Fydell · Proof-of-work hiring</span>
