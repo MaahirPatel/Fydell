@@ -73,26 +73,45 @@ export default async function EmployerHome() {
               <span className="status">{ready.length} ready</span>
             </div>
             <div className="action-list">
-              {ready.slice(0, 5).map((attempt) => (
-                <div className="action-item" key={attempt.id}>
-                  <span className="action-icon">{attempt.initials}</span>
+              {ready.length === 0 ? (
+                <div className="action-item">
+                  <span className="action-icon">—</span>
                   <div>
-                    <b>Review {attempt.label}</b>
+                    <b>No briefs ready yet</b>
                     <small>
-                      {role.title} ·{" "}
-                      {attempt.review?.recommendation ??
-                        attempt.report?.recommendation ??
-                        statusLabel[attempt.status]}
+                      Invite a candidate or open a seeded report from the role
+                      page.
                     </small>
                   </div>
                   <Link
-                    href={`/platform/roles/solutions-engineer/candidates/${attempt.id}`}
+                    href="/platform/roles/solutions-engineer"
                     className="button small"
                   >
-                    Review
+                    Open role
                   </Link>
                 </div>
-              ))}
+              ) : (
+                ready.slice(0, 5).map((attempt) => (
+                  <div className="action-item" key={attempt.id}>
+                    <span className="action-icon">{attempt.initials}</span>
+                    <div>
+                      <b>Review {attempt.label}</b>
+                      <small>
+                        {role.title} ·{" "}
+                        {attempt.review?.recommendation ??
+                          attempt.report?.recommendation ??
+                          statusLabel[attempt.status]}
+                      </small>
+                    </div>
+                    <Link
+                      href={`/platform/roles/solutions-engineer/candidates/${attempt.id}`}
+                      className="button small"
+                    >
+                      Review
+                    </Link>
+                  </div>
+                ))
+              )}
             </div>
           </section>
 

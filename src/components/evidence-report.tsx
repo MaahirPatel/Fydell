@@ -92,36 +92,46 @@ export function EvidenceReport({ attempt }: { attempt: Attempt }) {
       approvedAt: approve ? new Date().toISOString() : next.approvedAt,
       approvedBy: approve ? "K. Patel" : next.approvedBy,
     };
-    const response = await fetch(`/api/attempts/${attempt.id}/review`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    setSaving(false);
-    if (!response.ok) {
-      setMessage("Could not save review.");
-      return;
+    try {
+      const response = await fetch(`/api/attempts/${attempt.id}/review`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        setMessage("Could not save review. Try again.");
+        return;
+      }
+      const data = (await response.json()) as { attempt: Attempt };
+      setReview(data.attempt.review ?? payload);
+      setMessage(approve ? "Conclusions approved." : "Review saved.");
+    } catch {
+      setMessage("Network error while saving review.");
+    } finally {
+      setSaving(false);
     }
-    const data = (await response.json()) as { attempt: Attempt };
-    setReview(data.attempt.review ?? payload);
-    setMessage(approve ? "Conclusions approved." : "Review saved.");
   }
 
   async function saveDecision(value: HiringDecision) {
     setSaving(true);
     setMessage("");
-    const response = await fetch(`/api/attempts/${attempt.id}/decision`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ decision: value, note: decisionNote }),
-    });
-    setSaving(false);
-    if (!response.ok) {
-      setMessage("Could not record decision.");
-      return;
+    try {
+      const response = await fetch(`/api/attempts/${attempt.id}/decision`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision: value, note: decisionNote }),
+      });
+      if (!response.ok) {
+        setMessage("Could not record decision. Try again.");
+        return;
+      }
+      setDecision(value);
+      setMessage(`Decision recorded: ${value}.`);
+    } catch {
+      setMessage("Network error while recording decision.");
+    } finally {
+      setSaving(false);
     }
-    setDecision(value);
-    setMessage(`Decision recorded: ${value}.`);
   }
 
   return (

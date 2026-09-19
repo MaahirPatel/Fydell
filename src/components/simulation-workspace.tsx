@@ -56,6 +56,7 @@ export function SimulationWorkspace({
     initialAttempt.workspace ?? emptyWorkspace,
   );
   const [saved, setSaved] = useState(true);
+  const [saveError, setSaveError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<"tasks" | "work" | "notes">(
     "work",
@@ -82,15 +83,22 @@ export function SimulationWorkspace({
     const id = window.setTimeout(async () => {
       const event = pendingEvent.current;
       pendingEvent.current = null;
-      const response = await fetch(`/api/attempts/by-token/${token}/workspace`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workspace: state, event }),
-      });
-      if (response.ok) {
-        const data = (await response.json()) as { attempt: Attempt };
-        setAttempt(data.attempt);
-        setSaved(true);
+      try {
+        const response = await fetch(`/api/attempts/by-token/${token}/workspace`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ workspace: state, event }),
+        });
+        if (response.ok) {
+          const data = (await response.json()) as { attempt: Attempt };
+          setAttempt(data.attempt);
+          setSaved(true);
+          setSaveError("");
+        } else {
+          setSaveError("Could not save to server. Your latest edits may be unsaved.");
+        }
+      } catch {
+        setSaveError("Network error while saving. Check connection and keep editing.");
       }
     }, 400);
     return () => window.clearTimeout(id);
@@ -179,18 +187,26 @@ Authentication review is on the calendar. Details to follow.`
 
   async function submit() {
     setSubmitting(true);
-    await fetch(`/api/attempts/by-token/${token}/workspace`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ workspace: state }),
-    });
-    const response = await fetch(`/api/attempts/by-token/${token}/submit`, {
-      method: "POST",
-    });
-    setSubmitting(false);
-    if (response.ok) {
+    setSaveError("");
+    try {
+      await fetch(`/api/attempts/by-token/${token}/workspace`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspace: state }),
+      });
+      const response = await fetch(`/api/attempts/by-token/${token}/submit`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        setSaveError("Submit failed. Try again in a moment.");
+        return;
+      }
       const data = (await response.json()) as { attempt: Attempt };
       setAttempt(data.attempt);
+    } catch {
+      setSaveError("Network error on submit. Retry when online.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -238,10 +254,15 @@ Authentication review is on the calendar. Details to follow.`
           {attempt.label} · Acme rollout · Durable session
         </span>
         <span className="autosave">
-          {saved ? "Saved to server" : "Saving…"}
+          {saveError ? "Save issue" : saved ? "Saved to server" : "Saving…"}
         </span>
         <span className="timer">Demo session</span>
       </header>
+      {saveError ? (
+        <div className="notice demo-banner workspace-banner" role="alert">
+          <b>Save/submit issue.</b> {saveError}
+        </div>
+      ) : null}
       <div className="workspace-body">
         <aside
           className={`work-rail ${mobilePanel === "tasks" ? "mobile-show" : ""}`}

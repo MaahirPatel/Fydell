@@ -11,30 +11,48 @@ export function InviteForm() {
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<Attempt | null>(null);
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
     setError("");
-    const response = await fetch("/api/attempts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, label }),
-    });
-    setBusy(false);
-    if (!response.ok) {
-      setError("Could not create invite.");
-      return;
+    setCopied(false);
+    try {
+      const response = await fetch("/api/attempts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, label }),
+      });
+      if (!response.ok) {
+        setError("Could not create invite. Try again.");
+        return;
+      }
+      const data = (await response.json()) as { attempt: Attempt };
+      setCreated(data.attempt);
+      setEmail("");
+      setLabel("");
+      router.refresh();
+    } catch {
+      setError("Network error creating invite. Check your connection and retry.");
+    } finally {
+      setBusy(false);
     }
-    const data = (await response.json()) as { attempt: Attempt };
-    setCreated(data.attempt);
-    setEmail("");
-    setLabel("");
-    router.refresh();
   }
 
   const origin =
     typeof window !== "undefined" ? window.location.origin : "";
+
+  async function copyLink() {
+    if (!created) return;
+    const value = `${origin}/c/${created.token}`;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+    } catch {
+      setError("Clipboard blocked — select the link and copy manually.");
+    }
+  }
 
   return (
     <section className="panel">
@@ -53,6 +71,7 @@ export function InviteForm() {
             value={label}
             onChange={(event) => setLabel(event.target.value)}
             placeholder="Invite 1"
+            disabled={busy}
           />
         </label>
         <label>
@@ -62,12 +81,17 @@ export function InviteForm() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="candidate@company.com"
+            disabled={busy}
           />
         </label>
         <button className="button" type="submit" disabled={busy}>
           {busy ? "Creating…" : "Create invite + private link"}
         </button>
-        {error ? <p className="status amber">{error}</p> : null}
+        {error ? (
+          <p className="status amber" role="alert">
+            {error}
+          </p>
+        ) : null}
         {created ? (
           <div className="invite-result">
             <p>
@@ -83,13 +107,9 @@ export function InviteForm() {
               <button
                 className="button secondary small"
                 type="button"
-                onClick={async () => {
-                  await navigator.clipboard.writeText(
-                    `${origin}/c/${created.token}`,
-                  );
-                }}
+                onClick={copyLink}
               >
-                Copy link
+                {copied ? "Copied" : "Copy link"}
               </button>
             </div>
           </div>

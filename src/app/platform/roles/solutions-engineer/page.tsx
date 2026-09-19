@@ -109,7 +109,21 @@ export default async function RolePage() {
             </tr>
           </thead>
           <tbody>
-            {attempts.map((attempt) => {
+            {attempts.length === 0 ? (
+              <tr>
+                <td colSpan={6}>
+                  <div className="side-panel-body">
+                    <p>
+                      <b>No candidate records yet.</b>
+                    </p>
+                    <p className="muted">
+                      Create an invite above to start the durable loop.
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              attempts.map((attempt) => {
               const recommendation =
                 attempt.review?.recommendation ??
                 attempt.report?.recommendation;
@@ -182,7 +196,8 @@ export default async function RolePage() {
                   </td>
                 </tr>
               );
-            })}
+            })
+            )}
           </tbody>
         </table>
       </section>
